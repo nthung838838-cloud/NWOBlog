@@ -34,8 +34,8 @@
       </details>
 
       <details class="acc" open>
-        <summary class="accSum">Ebook</summary>
-        <nav id="menuEbooks" class="menu"></nav>
+        <summary class="accSum">Ebook</summaryhm>
+          <nav id="menuEbooks" class="menu"></nav>
       </details>
     </aside>
 
@@ -199,7 +199,7 @@
     // Initial load
     (async function init() {
       try {
-        const r = await fetch("api/data");
+        const r = await fetch("blog.data.json?t=" + Date.now());
         if (r.ok) {
           const d = await r.json();
           if (d.categories) cfg.categories = d.categories;
