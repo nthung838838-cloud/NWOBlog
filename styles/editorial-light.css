@@ -1,79 +1,78 @@
 @import url("editorial.css");
 
+:root {
+  --bg: #f8fafc;
+  --bg-gradient: radial-gradient(circle at top left, #f1f5f9, #f8fafc);
+  --panel: rgba(255, 255, 255, 0.7);
+  --surface: rgba(255, 255, 255, 0.5);
+  --border: rgba(203, 213, 225, 0.6);
 
-:root{
-  --bg:#f5f7fb;
-  --panel:#ffffff;
-  --surface:#ffffff;
-  --border:#e5e7eb;
+  --text: #334155;
+  --muted: #64748b;
+  --heading: #0f172a;
 
-  --text:#0f172a;
-  --muted:#475569;
-  --heading:#020617;
+  --link: #0284c7;
+  --linkHover: #0ea5e9;
 
-  --link:#2563eb;
-  --linkHover:#1d4ed8;
+  --accent: #0ea5e9;
+  --accent-glow: rgba(14, 165, 233, 0.15);
 
-  --accent:#2563eb;
-
-  --radius:16px;
-  --shadow: 0 10px 24px rgba(0,0,0,.06);
+  --radius: 16px;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
 }
 
-html,body{ background:var(--bg); color:var(--text); }
-
-.topbar,.header{
-  background: rgba(255,255,255,.92);
+.topbar,
+.header {
+  background: rgba(255, 255, 255, 0.85);
   border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
-.card,.panel,.sidebar,.toc{
+.card,
+.panel,
+.sidebar,
+.toc,
+.postCard,
+.ebookRow {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
 }
 
-.article,.content{
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius) + 4px);
-  box-shadow: var(--shadow);
+.article,
+.content {
+  background: #ffffff;
+  border-color: var(--border);
 }
 
-a{ color: var(--link); text-decoration:none; }
-a:hover{ color: var(--linkHover); }
-
-h1,h2,h3,h4{ color: var(--heading); }
-
-input,select{
-  background:#fff !important;
-  color: var(--text) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 12px !important;
-}
-select option{ background:#fff; color: var(--text); }
-
-.btn,button{
-  background:#e0e7ff;
-  border:1px solid #c7d2fe;
-  color:#1e3a8a;
-  border-radius:12px;
+input,
+select,
+textarea {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border-color: #cbd5e1 !important;
 }
 
-.badge,.tag{
-  background:#eef2ff;
-  border:1px solid #c7d2fe;
-  color:#1e3a8a;
-  border-radius:999px;
+.menuItem:hover {
+  background: rgba(15, 23, 42, 0.04);
 }
 
-.content pre, .article pre{
-  background:#0b1020;
-  color:#e5e7eb;
+.content pre,
+.article pre {
+  background: #1e293b;
+  color: #f1f5f9;
 }
 
+.content code,
+.article code {
+  background: rgba(0, 0, 0, .06);
+  color: #0369a1;
+  border: 1px solid rgba(0, 0, 0, .05);
+}
 
-.accSum{color: var(--heading);} .menuItem{color: var(--text);} .menuItem:hover{background: rgba(0,0,0,.04);}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
