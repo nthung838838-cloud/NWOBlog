@@ -1,6 +1,7 @@
 
 async function apiGetData(){
-  const r = await fetch("api/data", { cache: "no-store" });
+  // Fetch static JSON directly (works for both Local Server and Static Hosting like GitHub Pages)
+  const r = await fetch("blog.data.json?t=" + Date.now(), { cache: "no-store" });
   if(!r.ok) throw new Error("Không tải được dữ liệu: " + r.status);
   return await r.json();
 }
