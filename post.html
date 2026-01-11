@@ -1,0 +1,128 @@
+
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>NWO Blog</title>
+  <link id="themeStylesheet" rel="stylesheet" href="styles/app.css"/>
+  <script src="js/api.js"></script>
+  <script src="js/theme.js"></script>
+  <style>
+    .themeBtn{padding:8px 10px;border-radius:12px;margin-left:10px}
+
+    .post-wrap{max-width:980px;margin:0 auto;padding:16px}
+    .post-card{padding:18px}
+    .post-title{margin:6px 0 10px;font-size:28px}
+    .post-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .content-box{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+    .content-box img{max-width:100%;border-radius:14px;border:1px solid var(--line)}
+  </style>
+  
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html"><span class="dot"></span> Blog</a>
+    <div class="actions">
+      <button id="themeToggle" class="btn themeBtn" type="button" title="Đổi theme" onclick="window.__toggleTheme && window.__toggleTheme()">🌓</button>
+    </div>
+  </header>
+
+  <div class="post-wrap">
+    <div class="panel post-card">
+      <div class="notice"><a href="index.html">← Quay lại</a></div>
+      <h1 id="title" class="post-title">Đang tải…</h1>
+      <div id="meta" class="post-meta"></div>
+      <div id="content" class="content-box"></div>
+    </div>
+  </div>
+
+<script>
+(async function(){
+  const id = new URLSearchParams(location.search).get("id");
+  const data = await apiGetData();
+  const posts = data.posts || [];
+  const post = posts.find(p => p.id === id);
+
+  const titleEl = document.getElementById("title");
+  const metaEl = document.getElementById("meta");
+  const contentEl = document.getElementById("content");
+
+  function esc(s){
+    return String(s||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  if(!post){
+    titleEl.textContent = "Không tìm thấy bài viết";
+    contentEl.innerHTML = "<p>(Sai id hoặc bài viết đã bị xóa)</p>";
+    return;
+  }
+
+  titleEl.textContent = post.title || "Bài viết";
+  const badges = [
+    post.category ? `<span class="badge">${esc(post.category)}</span>` : "",
+    ...(post.tags||[]).slice(0,10).map(t => `<span class="badge">${esc(t)}</span>`)
+  ].filter(Boolean).join(" ");
+  metaEl.innerHTML = badges;
+
+  const type = (post.type || "html").toLowerCase();
+
+  if (type === "docx") {
+    location.href = "docx.html?id=" + encodeURIComponent(post.id);
+    return;
+  }
+  if (type === "video") {
+    location.href = "video.html?id=" + encodeURIComponent(post.id);
+    return;
+  }
+  if (type === "pdf" && post.pdf) {
+    // For PDF posts, just download/open
+    location.href = post.pdf;
+    return;
+  }
+
+  if (type === "article" && post.url) {
+    const r = await fetch(post.url, { cache:"no-store" });
+    if (!r.ok) throw new Error("Không tải được bài: " + r.status);
+    const htmlText = await r.text();
+
+    // Parse and extract <body> content safely (avoid breaking current script)
+    const doc = new DOMParser().parseFromString(htmlText, "text/html");
+    // Remove scripts inside embedded html for safety/clean
+    doc.querySelectorAll("script").forEach(s => s.remove());
+
+    const bodyHtml = doc.body ? doc.body.innerHTML : htmlText;
+    contentEl.innerHTML = bodyHtml || "<p>(Chưa có nội dung)</p>";
+    return;
+  }
+
+  // Default: render saved html
+  contentEl.innerHTML = post.html || "<p>(Chưa có nội dung)</p>";
+})().catch(e => {
+  console.error(e);
+  document.getElementById("title").textContent = "Lỗi";
+  document.getElementById("content").textContent = e.message || String(e);
+});
+</script>
+<script>
+// Theme toggle (Dark/Light)
+(function(){
+  const themes = { dark: "styles/editorial.css", light: "styles/editorial-light.css" };
+  const sheet = document.getElementById("themeStylesheet");
+  const btn = document.getElementById("themeToggle");
+  if(!sheet || !btn) return;
+
+  function setTheme(t){
+    sheet.href = themes[t] || themes.dark;
+    localStorage.setItem("theme", t);
+  }
+  btn.addEventListener("click", () => {
+    const cur = localStorage.getItem("theme") || "dark";
+    setTheme(cur === "dark" ? "light" : "dark");
+  });
+  setTheme(localStorage.getItem("theme") || "dark");
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blog</title>
+
+  <!-- Theme stylesheet (JS will toggle between dark/light) -->
+  <link id="themeStylesheet" rel="stylesheet" href="styles/editorial.css" />
+</head>
+
+<body>
+  <header class="siteHeader">
+    <a class="brand" href="index.html"><img class="logo" src="Logo/logo.png" alt="NWO Blog" /></a>
+
+    <div class="headerRight">
+      <input id="search" placeholder="Tìm bài viết..." />
+      <select id="sortOrder" class="btn"
+        style="padding:6px 8px; border-radius:8px; cursor:pointer; font-size:14px; border:1px solid #ccc; background:var(--bg-card); color:var(--text-main);"
+        title="Sắp xếp">
+        <option value="newest">Mới nhất</option>
+        <option value="oldest">Cũ nhất</option>
+      </select>
+      <button id="themeToggle" class="btn" type="button" title="Đổi sáng/tối">🌓</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <details class="acc" open>
+        <summary class="accSum">Chủ đề</summary>
+        <nav id="menuCats" class="menu"></nav>
+      </details>
+
+      <details class="acc" open>
+        <summary class="accSum">Ebook</summary>
+        <nav id="menuEbooks" class="menu"></nav>
+      </details>
+    </aside>
+
+    <main class="main">
+      <div id="posts" class="posts"></div>
+    </main>
+  </div>
+
+
+  <script src="blog.config.js"></script>
+  <script>
+    // ===== Theme toggle (Dark/Light) =====
+    (function () {
+      const themes = { dark: "styles/editorial.css", light: "styles/editorial-light.css" };
+      const sheet = document.getElementById("themeStylesheet");
+      const btn = document.getElementById("themeToggle");
+
+      function setTheme(t) {
+        sheet.href = themes[t] || themes.dark;
+        localStorage.setItem("theme", t);
+      }
+      btn.addEventListener("click", () => {
+        const cur = localStorage.getItem("theme") || "dark";
+        setTheme(cur === "dark" ? "light" : "dark");
+      });
+      setTheme(localStorage.getItem("theme") || "dark");
+    })();
+
+    // Accordion: allow multiple sections open at the same time
+    // ===== Blog render =====
+    const cfg = window.BLOG_CONFIG || { categories: [], posts: [] };
+    const menuCats = document.getElementById("menuCats");
+    const menuEbooks = document.getElementById("menuEbooks");
+    const postsEl = document.getElementById("posts");
+    const searchEl = document.getElementById("search");
+    const sortEl = document.getElementById("sortOrder");
+
+    let currentSlug = null; // category slug
+
+    const isEbookSlug = (slug) => String(slug || "").toLowerCase() === "ebook";
+
+    function esc(s) {
+      return String(s || "").replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function mkBtn(label, slug, container) {
+      const a = document.createElement("a");
+      a.href = "javascript:void(0)";
+      a.className = "menuItem";
+      a.textContent = label;
+      a.onclick = () => {
+        currentSlug = slug || null;
+        document.querySelectorAll(".menuItem").forEach(x => x.classList.remove("active"));
+        a.classList.add("active");
+        renderPosts();
+      };
+      container.appendChild(a);
+      return a;
+    }
+
+    function renderMenu() {
+      menuCats.innerHTML = "";
+      menuEbooks.innerHTML = "";
+
+      const cats = (cfg.categories || []).slice();
+      const ebookCats = cats.filter(c => isEbookSlug(c.slug));
+      const normalCats = cats.filter(c => !isEbookSlug(c.slug));
+
+      // default select: first normal, else ebook, else null
+      if (!currentSlug) {
+        if (normalCats.length) currentSlug = normalCats[0].slug;
+        else if (ebookCats.length) currentSlug = "ebook";
+      }
+
+      // Normal categories list
+      if (!normalCats.length) {
+        menuCats.innerHTML = '<div class="emptySide">Chưa có chủ đề.</div>';
+      } else {
+        normalCats.forEach(c => {
+          const btn = mkBtn(c.name, c.slug, menuCats);
+          if (String(currentSlug) === String(c.slug)) btn.classList.add("active");
+        });
+      }
+
+      // Ebook menu: only one item if exists
+      if (!ebookCats.length) {
+        menuEbooks.innerHTML = '<div class="emptySide">Chưa có ebook.</div>';
+      } else {
+        const btn = mkBtn("📚 Ebook", "ebook", menuEbooks);
+        if (isEbookSlug(currentSlug)) btn.classList.add("active");
+      }
+    }
+
+    function renderPosts() {
+      const q = (searchEl.value || "").toLowerCase().trim();
+      postsEl.innerHTML = "";
+
+      const filtered = (cfg.posts || []).filter(p => {
+        if (currentSlug && String(p.categorySlug || "") !== String(currentSlug)) return false;
+        if (!q) return true;
+        const hay = (p.title + " " + (p.tags || []).join(" ")).toLowerCase();
+        return hay.includes(q);
+      });
+
+      // Sort
+      const order = sortEl.value;
+      filtered.sort((a, b) => {
+        const ta = Number((a.id || "").split('-').pop()) || 0;
+        const tb = Number((b.id || "").split('-').pop()) || 0;
+        return order === 'oldest' ? ta - tb : tb - ta;
+      });
+
+      // Ebook view: list pdf downloads, button right after title (same row)
+      if (isEbookSlug(currentSlug)) {
+        const pdfs = filtered.filter(p => String(p.type || "").toLowerCase() === "pdf" && p.pdf);
+        if (!pdfs.length) {
+          postsEl.innerHTML = '<div class="empty">Chưa có ebook (PDF) trong chủ đề này.</div>';
+          return;
+        }
+        const list = document.createElement("div");
+        list.className = "ebookList";
+        pdfs.forEach(p => {
+          const row = document.createElement("div");
+          row.className = "ebookRow";
+          row.innerHTML = `
+          <div class="ebookTitle">${esc(p.title)}</div>
+          <a class="btn btnSmall" href="${esc(p.pdf)}" download>⬇ Tải PDF</a>
+        `;
+          list.appendChild(row);
+        });
+        postsEl.appendChild(list);
+        return;
+      }
+
+      // Normal posts
+      if (!filtered.length) {
+        postsEl.innerHTML = '<div class="empty">Không có bài viết phù hợp.</div>';
+        return;
+      }
+
+      filtered.forEach(p => {
+        const card = document.createElement("div");
+        card.className = "postCard";
+        const tagHtml = (p.tags || []).slice(0, 6).map(t => `<span class="tag">${esc(t)}</span>`).join("");
+        let href = "post.html?id=" + encodeURIComponent(p.id);
+        const t = String(p.type || "").toLowerCase();
+        if (t === "docx") href = "docx.html?id=" + encodeURIComponent(p.id);
+        if (t === "video") href = "video.html?id=" + encodeURIComponent(p.id);
+        if (t === "pdf" && p.pdf) href = p.pdf;
+        card.innerHTML = `
+        <a class="postTitle" href="${href}">${esc(p.title)}</a>
+        <div class="postMeta">${tagHtml}</div>
+      `;
+        postsEl.appendChild(card);
+      });
+    }
+
+    searchEl.addEventListener("input", renderPosts);
+    sortEl.addEventListener("change", renderPosts);
+
+    // Initial load
+    (async function init() {
+      try {
+        const r = await fetch("api/data");
+        if (r.ok) {
+          const d = await r.json();
+          if (d.categories) cfg.categories = d.categories;
+          if (d.posts) cfg.posts = d.posts;
+        }
+      } catch (e) { console.error("Fetch data error", e); }
+      renderMenu();
+      // Select first normal category if available
+      const normal = (cfg.categories || []).find(c => !isEbookSlug(c.slug));
+      if (normal && window.innerWidth > 900) {
+        // On desktop maybe select first? Or let users choose?
+        // Existing behavior seemed to rely on user click to filter.
+        // Let's just render all (or default empty?). 
+        // Previous logic didn't auto-select. I will leave logic as is: show all unless selected.
+      }
+      renderPosts();
+    })();
+  </script>
+
+  <style>
+    /* layout only; colors handled by theme css */
+    .siteHeader {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      backdrop-filter: blur(8px);
+      /* glass effect for modern feel */
+    }
+
+    .brand {
+      font-weight: 900;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo {
+      height: auto;
+      width: 280px;
+      max-width: 100%;
+      border-radius: 8px;
+      object-fit: contain;
+    }
+
+    /* Friendlier logo style */
+
+    #search {
+      width: 340px;
+      max-width: 58vw;
+      padding: 8px 10px;
+    }
+
+    .headerRight {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    .acc {
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .accSum {
+      font-weight: 800;
+      cursor: pointer;
+      padding: 12px 12px;
+      list-style: none;
+    }
+
+    .accSum::-webkit-details-marker {
+      display: none;
+    }
+
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 0 12px 12px;
+    }
+
+    .menuItem {
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .menuItem.active {
+      outline: 2px solid rgba(59, 130, 246, .35);
+    }
+
+    .emptySide {
+      opacity: .8;
+      padding: 0 12px 12px;
+    }
+
+    .posts {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .postCard {
+      padding: 14px 14px;
+      border-radius: 16px;
+    }
+
+    .postTitle {
+      font-size: 18px;
+      font-weight: 900;
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+
+    .postMeta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .ebookList {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .ebookRow {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 16px;
+      flex-wrap: wrap;
+    }
+
+    .ebookTitle {
+      font-weight: 900;
+    }
+
+    .empty {
+      padding: 18px;
+      opacity: .85;
+    }
+
+    .btnSmall {
+      padding: 8px 10px;
+      border-radius: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      #search {
+        width: 100%;
+        max-width: none;
+      }
+    }
+  </style>
+</body>
+
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NWO Blog</title>
+  <script src="js/api.js"></script>
+  <script src="js/theme.js"></script>
+  <link id="themeStylesheet" rel="stylesheet" href="styles/app.css"/>
+  <style>
+    .themeBtn{padding:8px 10px;border-radius:12px;margin-left:10px}
+
+    .wrap{max-width:980px;margin:0 auto;padding:16px}
+    .card{padding:18px}
+    .title{margin:6px 0 10px;font-size:26px}
+    .meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    video{max-width:100%;border-radius:16px;border:1px solid var(--line);background:#000}
+  </style>
+  
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html"><span class="dot"></span> Blog</a>
+    <div class="actions">
+      <button id="themeToggle" class="btn themeBtn" type="button" title="Đổi theme" onclick="window.__toggleTheme && window.__toggleTheme()">🌓</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="panel card">
+      <div class="notice"><a href="index.html">← Quay lại</a></div>
+      <h1 id="title" class="title">Đang tải…</h1>
+      <div id="meta" class="meta"></div>
+      <div id="content"></div>
+    </div>
+  </div>
+
+<script>
+(async function(){
+  const id = new URLSearchParams(location.search).get("id");
+  const data = await apiGetData();
+  const post = (data.posts||[]).find(p => p.id === id);
+
+  const titleEl = document.getElementById("title");
+  const metaEl = document.getElementById("meta");
+  const contentEl = document.getElementById("content");
+
+  function esc(s){ return String(s||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  if (!post) {
+    titleEl.textContent = "Không tìm thấy video";
+    contentEl.innerHTML = "<p>Kiểm tra lại đường dẫn <code>video.html?id=...</code></p>";
+    return;
+  }
+
+  titleEl.textContent = post.title || "(Không tiêu đề)";
+  metaEl.innerHTML = [
+    `<span class="badge">VIDEO</span>`,
+    post.category ? `<span class="badge">${esc(post.category)}</span>` : "",
+    ...(post.tags||[]).slice(0,8).map(t => `<span class="badge">${esc(t)}</span>`)
+  ].join(" ");
+
+  const src = post.video || "";
+  contentEl.innerHTML = `
+    <video controls playsinline preload="metadata">
+      <source src="${esc(src)}" type="video/mp4">
+      Trình duyệt không hỗ trợ video.
+    </video>
+    ${post.description ? `<p style="margin-top:10px;opacity:.9">${esc(post.description)}</p>` : ""}
+  `;
+})().catch(e => {
+  console.error(e);
+  document.getElementById("title").textContent = "Lỗi";
+  document.getElementById("content").textContent = e.message || String(e);
+});
+</script>
+<script>
+// Theme toggle (Dark/Light)
+(function(){
+  const themes = { dark: "styles/app.css", light: "styles/app-light.css" };
+  const sheet = document.getElementById("themeStylesheet");
+  const btn = document.getElementById("themeToggle");
+  if(!sheet || !btn) return;
+
+  function setTheme(t){
+    sheet.href = themes[t] || themes.dark;
+    localStorage.setItem("theme", t);
+  }
+  btn.addEventListener("click", () => {
+    const cur = localStorage.getItem("theme") || "dark";
+    setTheme(cur === "dark" ? "light" : "dark");
+  });
+  setTheme(localStorage.getItem("theme") || "dark");
+})();
+</script>
+
+</body>
+</html>

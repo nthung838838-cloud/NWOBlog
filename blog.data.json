@@ -1,0 +1,168 @@
+﻿{
+  "categories": [
+    {
+      "name": "Kinh t\u1EBF",
+      "slug": "kinhte",
+      "folder": "KinhTe",
+      "readonly": true
+    },
+    {
+      "name": "Gi\u00E1o d\u1EE5c",
+      "slug": "giaoduc",
+      "folder": "GiaoDuc",
+      "readonly": true
+    },
+    {
+      "name": "Ch\u00EDnh tr\u1ECB",
+      "slug": "chinhtri",
+      "folder": "ChinhTri",
+      "readonly": true
+    },
+    {
+      "name": "S\u1EE9c kh\u1ECFe",
+      "slug": "suckhoe",
+      "folder": "SucKhoe",
+      "readonly": true
+    },
+    {
+      "name": "Ebook",
+      "slug": "ebook",
+      "folder": "Ebook",
+      "readonly": true
+    }
+  ],
+  "posts": [
+    {
+      "id": "aaaa-1768151064791",
+      "title": "aaaa",
+      "category": "Kinh t\u1EBF",
+      "categorySlug": "kinhte",
+      "tags": [],
+      "type": "html",
+      "readonly": true,
+      "docx": null,
+      "video": null,
+      "pdf": null,
+      "url": null,
+      "html": "aaaaaa"
+    },
+    {
+      "id": "docx-mau-1",
+      "title": "B\u00E0i vi\u1EBFt Word (.docx) m\u1EABu",
+      "category": "Ch\u00EDnh tr\u1ECB",
+      "categorySlug": "chinhtri",
+      "tags": [
+        "Word",
+        "DOCX",
+        "Mammoth"
+      ],
+      "type": "docx",
+      "readonly": true,
+      "docx": "TaiLieu/bai-viet-mau.docx",
+      "video": null,
+      "pdf": null,
+      "url": null,
+      "html": null
+    },
+    {
+      "id": "gdp-2025-video",
+      "title": "T\u0103ng tr\u01B0\u1EDFng GDP 2025 (Video)",
+      "category": "Kinh t\u1EBF",
+      "categorySlug": "kinhte",
+      "tags": [
+        "GDP",
+        "Kinh t\u1EBF",
+        "Video"
+      ],
+      "type": "video",
+      "readonly": true,
+      "docx": null,
+      "video": "KinhTe/video-gdp.mp4",
+      "pdf": null,
+      "url": null,
+      "html": null
+    },
+    {
+      "id": "gdp-2025-article",
+      "title": "T\u0103ng tr\u01B0\u1EDFng GDP 2025 (B\u00E0i vi\u1EBFt)",
+      "category": "Kinh t\u1EBF",
+      "categorySlug": "kinhte",
+      "tags": [
+        "GDP",
+        "Kinh t\u1EBF"
+      ],
+      "type": "article",
+      "readonly": true,
+      "docx": null,
+      "video": null,
+      "pdf": null,
+      "url": "KinhTe/bai-viet-1.html",
+      "html": null
+    },
+    {
+      "id": "doi-moi-giao-duc",
+      "title": "\u0110\u1ED5i m\u1EDBi gi\u00E1o d\u1EE5c",
+      "category": "Gi\u00E1o d\u1EE5c",
+      "categorySlug": "giaoduc",
+      "tags": [
+        "Gi\u00E1o d\u1EE5c"
+      ],
+      "type": "article",
+      "readonly": true,
+      "docx": null,
+      "video": null,
+      "pdf": null,
+      "url": "GiaoDuc/giao-duc-1.html",
+      "html": null
+    },
+    {
+      "id": "chinhtri-bai-viet-1",
+      "title": "T\u0103ng tr\u01B0\u1EDFng GDP 2025 (ChinhTri)",
+      "category": "Ch\u00EDnh tr\u1ECB",
+      "categorySlug": "chinhtri",
+      "tags": [
+        "Ch\u00EDnh tr\u1ECB"
+      ],
+      "type": "article",
+      "readonly": true,
+      "docx": null,
+      "video": null,
+      "pdf": null,
+      "url": "ChinhTri/bai-viet-1.html",
+      "html": null
+    },
+    {
+      "id": "suckhoe-bai-viet-1",
+      "title": "T\u0103ng tr\u01B0\u1EDFng GDP 2025 (SucKhoe)",
+      "category": "S\u1EE9c kh\u1ECFe",
+      "categorySlug": "suckhoe",
+      "tags": [
+        "S\u1EE9c kh\u1ECFe"
+      ],
+      "type": "article",
+      "readonly": true,
+      "docx": null,
+      "video": null,
+      "pdf": null,
+      "url": "SucKhoe/bai-viet-1.html",
+      "html": null
+    },
+    {
+      "id": "ebook-mau",
+      "title": "Ebook m\u1EABu (PDF)",
+      "category": "Ebook",
+      "categorySlug": "ebook",
+      "tags": [
+        "ebook",
+        "pdf"
+      ],
+      "type": "pdf",
+      "readonly": true,
+      "docx": null,
+      "video": null,
+      "pdf": "Ebook/ebook-mau.pdf",
+      "url": null,
+      "html": null
+    }
+  ]
+}

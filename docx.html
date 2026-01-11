@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NWO Blog</title>
+  <link id="themeStylesheet" rel="stylesheet" href="styles/docx.css"/>
+  <script src="js/api.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="libs/mammoth.browser.min.js"></script>
+  
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html"><span class="dot"></span> Blog</a>
+    <div class="actions">
+      <button id="themeToggle" class="btn themeBtn" type="button" title="Đổi theme" onclick="window.__toggleTheme && window.__toggleTheme()">🌓</button>
+
+      <a class="btn" id="backPost" href="#">← Quay lại bài</a>
+      </div>
+  </header>
+
+  <div class="docx-wrap">
+    <div class="docx-layout">
+      <aside class="panel docx-sidebar">
+        <div class="section-title">Bài viết</div>
+        <h2 id="title" style="margin:6px 0 8px">Đang tải…</h2>
+        <div id="tags" class="post-meta"></div>
+        <hr class="sep"/>
+        <div class="section-title">Mục lục</div>
+        <nav id="toc" class="toc"><div class="toc-empty">Chưa có mục lục.</div></nav>
+      </aside>
+
+      <main class="panel docx-article">
+        <div id="content" class="content"><div class="loading">Đang chuyển đổi DOCX…</div></div>
+        <div class="footer">Tip: chạy trên IIS/Kestrel. Nếu lỗi Mammoth, kiểm tra file <code>libs/mammoth.browser.min.js</code>.</div>
+      </main>
+    </div>
+  </div>
+
+<script>
+(async function () {
+  const params = new URLSearchParams(location.search);
+  const id = params.get("id");
+
+  const titleEl = document.getElementById("title");
+  const tagsEl = document.getElementById("tags");
+  const contentEl = document.getElementById("content");
+  const tocEl = document.getElementById("toc");
+  const backPost = document.getElementById("backPost");
+
+  function esc(s){ return String(s||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function slugify(text){
+    return String(text||"").trim().toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-").replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+
+  function renderPost(post) {
+    titleEl.textContent = post.title || "Bài viết DOCX";
+    tagsEl.innerHTML = (post.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join("");
+    backPost.href = "post.html?id=" + encodeURIComponent(post.id);
+  }
+
+  function buildToc() {
+    const headings = contentEl.querySelectorAll("h1, h2, h3, h4");
+    if (!headings.length) {
+      tocEl.innerHTML = '<div class="toc-empty">Không tìm thấy heading để tạo mục lục.</div>';
+      return;
+    }
+
+    const items = [];
+    const used = new Set();
+
+    headings.forEach(h => {
+      const level = Number(h.tagName.substring(1));
+      const text = (h.textContent || "").trim();
+      if (!text) return;
+
+      let hid = h.id || slugify(text);
+      if (!hid) hid = "muc";
+      let base = hid, i = 2;
+      while (used.has(hid) || document.getElementById(hid)) { hid = base + "-" + (i++); }
+      used.add(hid);
+      h.id = hid;
+
+      items.push({ level, text, id: hid });
+    });
+
+    const ul = document.createElement("ul");
+    ul.className = "toc-list";
+
+    items.forEach(item => {
+      const li = document.createElement("li");
+      li.className = "toc-lv-" + item.level;
+      const a = document.createElement("a");
+      a.href = "#" + item.id;
+      a.textContent = item.text;
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
+
+    tocEl.innerHTML = "";
+    tocEl.appendChild(ul);
+  }
+
+  function decorateContent() {
+    contentEl.querySelectorAll("img").forEach(img => {
+      img.loading = "lazy";
+      img.decoding = "async";
+      const p = img.parentElement;
+      if (p && p.tagName === "P" && p.childNodes.length === 1) {
+        const fig = document.createElement("figure");
+        fig.className = "figure";
+        p.replaceWith(fig);
+        fig.appendChild(img);
+      }
+    });
+  }
+
+  function makeMammothOptions() {
+    const options = {
+      styleMap: [
+        "p[style-name='Heading 1'] => h1:fresh",
+        "p[style-name='Heading 2'] => h2:fresh",
+        "p[style-name='Heading 3'] => h3:fresh",
+        "p[style-name='Heading 4'] => h4:fresh"
+      ]
+    };
+
+    // API compatible: imgElement + readAsBase64String/read("base64")
+    if (window.mammoth && mammoth.images && typeof mammoth.images.imgElement === "function") {
+      options.convertImage = mammoth.images.imgElement(function (image) {
+        const readBase64 =
+          (typeof image.readAsBase64String === "function")
+            ? image.readAsBase64String()
+            : (typeof image.read === "function")
+              ? image.read("base64")
+              : Promise.resolve(null);
+
+        return Promise.resolve(readBase64).then(function (base64) {
+          if (!base64) return { src: "" };
+          return { src: "data:" + image.contentType + ";base64," + base64 };
+        });
+      });
+    }
+
+    return options;
+  }
+
+  async function convertDocx(url) {
+    if (!window.mammoth) {
+      contentEl.innerHTML = `<div class="error"><div class="error-title">❌ Không tìm thấy Mammoth.js</div><div class="error-body">Copy file <code>mammoth.browser.min.js</code> thật vào <code>Blog/libs/</code>.</div></div>`;
+      return;
+    }
+    const r = await fetch(url);
+    if (!r.ok) throw new Error("Không tải được DOCX (" + r.status + "): " + url);
+    const buf = await r.arrayBuffer();
+    const options = makeMammothOptions();
+    const result = await mammoth.convertToHtml({ arrayBuffer: buf }, options);
+    contentEl.innerHTML = result.value || "<p>(Không có nội dung)</p>";
+    decorateContent();
+    buildToc();
+  }
+
+  const data = await apiGetData();
+  const post = (data.posts||[]).find(p => p.id === id);
+  if (!post) {
+    titleEl.textContent = "Không tìm thấy bài viết";
+    contentEl.innerHTML = `<div class="error"><div class="error-title">❌ Không tìm thấy post theo id</div></div>`;
+    return;
+  }
+  renderPost(post);
+  const url = post.docx || "";
+  if (!url) {
+    contentEl.innerHTML = `<div class="error"><div class="error-title">❌ Post này thiếu đường dẫn DOCX</div></div>`;
+    return;
+  }
+  await convertDocx(url);
+})().catch(e => {
+  console.error(e);
+  document.getElementById("content").innerHTML = `<div class="error"><div class="error-title">❌ Lỗi</div><div class="error-body">${(e.message||e)}</div></div>`;
+});
+</script>
+<script>
+// Theme toggle (Dark/Light)
+(function(){
+  const themes = { dark: "styles/docx.css", light: "styles/docx-light.css" };
+  const sheet = document.getElementById("themeStylesheet");
+  const btn = document.getElementById("themeToggle");
+  if(!sheet || !btn) return;
+
+  function setTheme(t){
+    sheet.href = themes[t] || themes.dark;
+    localStorage.setItem("theme", t);
+  }
+  btn.addEventListener("click", () => {
+    const cur = localStorage.getItem("theme") || "dark";
+    setTheme(cur === "dark" ? "light" : "dark");
+  });
+  setTheme(localStorage.getItem("theme") || "dark");
+})();
+</script>
+
+</body>
+</html>

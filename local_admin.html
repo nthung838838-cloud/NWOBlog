@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NWO Blog</title>
+  <link rel="stylesheet" href="styles/app.css" />
+  <script src="js/api.js"></script>
+  <style>
+    .admin-wrap {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 16px
+    }
+
+    .cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px
+    }
+
+    @media (max-width: 900px) {
+      .cols {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .card {
+      padding: 16px
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin: 10px 0 6px
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .04);
+      color: var(--text);
+      outline: none
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px
+    }
+
+    .msg {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.5
+    }
+
+    .ok {
+      color: var(--accent2)
+    }
+
+    .err {
+      color: #ff7a7a
+    }
+
+    .mini {
+      font-size: 12px;
+      color: rgba(231, 238, 252, .55)
+    }
+
+    .filebox {
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px dashed rgba(255, 255, 255, .16);
+      background: rgba(255, 255, 255, .03)
+    }
+
+    .list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px
+    }
+
+    .textarea {
+      width: 100%;
+      min-height: 220px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: var(--panel);
+      color: var(--text);
+      outline: none
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999
+    }
+
+    .modal[hidden] {
+      display: none
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      backdrop-filter: blur(6px)
+    }
+
+    .modal-card {
+      position: relative;
+      max-width: 920px;
+      width: calc(100% - 24px);
+      border-radius: 18px;
+      border: 1px solid var(--stroke);
+      background: var(--panel);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+      overflow: hidden
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 14px;
+      border-bottom: 1px solid var(--stroke)
+    }
+
+    .modal-title {
+      font-weight: 700
+    }
+
+    .modal-body {
+      padding: 14px;
+      display: grid;
+      gap: 12px
+    }
+
+    .form-row {
+      display: grid;
+      gap: 8px
+    }
+
+    .form-row label {
+      font-size: 13px;
+      color: var(--muted)
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 14px;
+      border-top: 1px solid var(--stroke)
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  </style>
+  <link rel="stylesheet" href="styles/glass.css" />
+</head>
+
+<body>
+  <header class="topbar">
+
+    <div class="actions">
+
+      <a class="btn" href="index.html">Trang chủ</a>
+      <button class="btn" type="button" onclick="downloadExportZip()">Export ZIP</button>
+    </div>
+  </header>
+
+  <div class="admin-wrap">
+    <div class="cols">
+      <section class="panel card">
+        <h2 style="margin:0 0 8px">Tạo chủ đề (tạo thư mục thật)</h2>
+        <div class="notice">Chủ đề sẽ được ghi vào <b>blog.data.json</b> và tạo folder dưới thư mục <b>Blog/</b>.</div>
+
+        <div class="row">
+          <div>
+            <label>Tên chủ đề</label>
+            <input id="catName" placeholder="Ví dụ: Công nghệ" />
+          </div>
+          <div>
+            <label>Đường dẫn thư mục</label>
+            <input id="catFolder" placeholder="Ví dụ: CongNghe hoặc TaiLieu/CongNghe" />
+          </div>
+        </div>
+
+        <button class="btn primary" id="addCat" type="button">+ Tạo chủ đề</button>
+        <div id="catMsg" class="msg"></div>
+
+        <hr class="sep" />
+        <div class="section-title">Chủ đề hiện có</div>
+        <div id="catList" class="list"></div>
+      </section>
+
+      <section class="panel card">
+        <h2 style="margin:0 0 8px">Tạo post mới (lưu vào JSON + lưu file vào thư mục)</h2>
+        <div class="notice">DOCX/Video upload sẽ được lưu vào thư mục category.folder trên server.</div>
+
+        <label>Tiêu đề</label>
+        <input id="pTitle" placeholder="Tiêu đề bài viết" />
+
+        <div class="row">
+          <div>
+            <label>Chủ đề</label>
+            <select id="pCategory"></select>
+          </div>
+          <div>
+            <label>Loại bài</label>
+            <select id="pType">
+              <option value="html">Bài viết (HTML/Text)</option>
+              <option value="docx">Word (.docx)</option>
+              <option value="video">Video (.mp4)</option>
+            </select>
+          </div>
+        </div>
+
+        <label>Tags (phân cách bằng dấu phẩy)</label>
+        <input id="pTags" placeholder="Ví dụ: AI, Word, Tin tức" />
+
+        <div id="htmlBox">
+          <label>Nội dung (HTML)</label>
+          <textarea id="pHtml" placeholder="Bạn có thể dán HTML..."></textarea>
+        </div>
+
+        <div id="fileBox" hidden>
+          <label>Upload file</label>
+          <div class="filebox">
+            <input id="pFile" type="file" />
+            <div class="mini" id="pickedInfo"></div>
+          </div>
+
+          <label>Hoặc nhập đường dẫn file (đã có sẵn trong Blog/)</label>
+          <input id="pPath" placeholder="Ví dụ: TaiLieu/a.docx hoặc Media/v.mp4 hoặc Ebook/e.pdf" />
+        </div>
+
+        <button class="btn primary" id="addPost" type="button">+ Tạo post</button>
+        <div id="postMsg" class="msg"></div>
+      </section>
+    </div>
+
+    <div class="panel" style="margin-top:16px;padding:16px">
+      <h2 style="margin:0 0 8px">Ghi chú</h2>
+      <div class="notice">
+        • Không dùng LocalStorage: mọi thay đổi nằm trong <b>blog.data.json</b> và các thư mục trong <b>Blog/</b>.<br />
+        • Nút Export ZIP sẽ nén toàn bộ thư mục <b>Blog/</b> (kể cả file DOCX/Video bạn upload) để tải về.
+      </div>
+      <div id="bkMsg" class="msg"></div>
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      (function () {
+        const catName = document.getElementById("catName");
+        const catFolder = document.getElementById("catFolder");
+        const catMsg = document.getElementById("catMsg");
+        const catList = document.getElementById("catList");
+
+        const pTitle = document.getElementById("pTitle");
+        const pCategory = document.getElementById("pCategory");
+        const pType = document.getElementById("pType");
+        const pTags = document.getElementById("pTags");
+        const pHtml = document.getElementById("pHtml");
+        const pFile = document.getElementById("pFile");
+        const pPath = document.getElementById("pPath");
+        const pickedInfo = document.getElementById("pickedInfo");
+
+        const htmlBox = document.getElementById("htmlBox");
+        const fileBox = document.getElementById("fileBox");
+        const postMsg = document.getElementById("postMsg");
+
+        let DATA = null;
+
+        function esc(s) {
+          return String(s || "").replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        // ---- Edit Post Modal ----
+        let __editingPost = null;
+        const editModal = document.getElementById("editModal");
+        const editClose = document.getElementById("editClose");
+        const editSave = document.getElementById("editSave");
+        const editTitle = document.getElementById("editTitle");
+        const editTags = document.getElementById("editTags");
+        const editType = document.getElementById("editType");
+        const editHtmlWrap = document.getElementById("editHtmlWrap");
+        const editHtml = document.getElementById("editHtml");
+        const editFileWrap = document.getElementById("editFileWrap");
+        const editFile = document.getElementById("editFile");
+        const editCurrentPath = document.getElementById("editCurrentPath");
+
+        function showModal() { if (editModal) editModal.hidden = false; }
+        function hideModal() { if (editModal) editModal.hidden = true; __editingPost = null; if (editFile) editFile.value = ""; }
+        editClose?.addEventListener("click", hideModal);
+        editModal?.querySelector(".modal-backdrop")?.addEventListener("click", hideModal);
+
+        window.openEditModal = async function (p) {
+          __editingPost = p;
+          if (editTitle) editTitle.value = p.title || "";
+          if (editTags) editTags.value = (p.tags || []).join(", ");
+          if (editType) editType.textContent = (p.type || "").toUpperCase();
+
+          const t = (p.type || "").toLowerCase();
+          if (editHtmlWrap) editHtmlWrap.hidden = t !== "article";
+          if (editFileWrap) editFileWrap.hidden = t === "article";
+
+          // configure file input accept + current path
+          if (editCurrentPath) editCurrentPath.textContent = "";
+          if (editFile) editFile.accept = "";
+
+          if (t === "docx") {
+            if (editFile) editFile.accept = ".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+            if (editCurrentPath) editCurrentPath.textContent = "Hiện tại: " + (p.docx || "");
+          } else if (t === "video") {
+            if (editFile) editFile.accept = "video/*,.mp4";
+            if (editCurrentPath) editCurrentPath.textContent = "Hiện tại: " + (p.video || "");
+          } else if (t === "pdf") {
+            if (editFile) editFile.accept = "application/pdf,.pdf";
+            if (editCurrentPath) editCurrentPath.textContent = "Hiện tại: " + (p.pdf || "");
+          } else if (t === "article") {
+            // load html content
+            if (editHtml) editHtml.value = "Đang tải nội dung...";
+            try {
+              const r = await fetch(p.url, { cache: "no-store" });
+              if (editHtml) editHtml.value = r.ok ? await r.text() : "";
+            } catch { if (editHtml) editHtml.value = ""; }
+          }
+
+          showModal();
+        };
+
+        editSave?.addEventListener("click", async () => {
+          if (!__editingPost) return;
+          try {
+            const fd = new FormData();
+            fd.append("id", __editingPost.id);
+            fd.append("title", (editTitle.value || "").trim());
+            fd.append("tags", (editTags.value || "").trim());
+
+            const t = (__editingPost.type || "").toLowerCase();
+            if (t === "article") {
+              fd.append("html", editHtml.value || "");
+            } else {
+              const f = editFile.files && editFile.files[0];
+              if (f) fd.append("file", f);
+            }
+
+            const updated = await apiEditPost(fd);
+            // update in-memory object
+            Object.assign(__editingPost, updated);
+            hideModal();
+            // We need to re-render. Since renderPosts is in a different scope or might no longer be easily accessible if scopes are messed up,
+            // we'll try to call it if it's global or attached to window, otherwise simple page reload is a safe fallback
+            if (typeof renderPosts === 'function') renderPosts();
+            else location.reload();
+          } catch (err) {
+            alert(err.message || String(err));
+          }
+        });
+
+        function pill(text) {
+          const b = document.createElement("span");
+          b.className = "badge";
+          b.textContent = text;
+          return b;
+        }
+
+        function renderCats() {
+          const cats = (DATA && DATA.categories) || [];
+          pCategory.innerHTML = cats.map(c => `<option value="${esc(c.slug)}">${esc(c.name)}</option>`).join("");
+          catList.innerHTML = "";
+          cats.forEach(c => {
+            const wrap = document.createElement("span");
+            wrap.className = "badge";
+            wrap.style.display = "inline-flex";
+            wrap.style.alignItems = "center";
+            wrap.style.gap = "8px";
+
+            const label = document.createElement("span");
+            label.textContent = c.name + "  (" + c.folder + ")";
+            wrap.appendChild(label);
+
+            const ro = document.createElement("label");
+            ro.style.display = "inline-flex";
+            ro.style.alignItems = "center";
+            ro.style.gap = "4px";
+            ro.style.fontSize = "12px";
+            ro.style.marginLeft = "auto";
+
+            const chk = document.createElement("input");
+            chk.type = "checkbox";
+            chk.checked = !!c.readonly;
+            chk.addEventListener("change", async () => {
+              try {
+                await apiSetCategoryReadonly(c.folder, chk.checked);
+                c.readonly = chk.checked;
+                // update delete button state
+                const delBtn = wrap.querySelector("[data-delcat]");
+                if (delBtn) {
+                  delBtn.disabled = !!c.readonly || String(c.slug || "").toLowerCase() === "ebook";
+                  delBtn.style.opacity = delBtn.disabled ? "0.6" : "1";
+                  delBtn.title = delBtn.disabled ? "Chủ đề đang readonly nên không thể xóa" : "";
+                }
+                // Optional: Refresh to update post UI if we want to enforce logic there?
+                // For now just setting the flag.
+              } catch (err) {
+                alert(err.message || String(err));
+                chk.checked = !!c.readonly;
+              }
+            });
+            ro.appendChild(chk);
+            ro.appendChild(document.createTextNode("readonly"));
+            wrap.appendChild(ro);
+
+            const del = document.createElement("button");
+            del.type = "button";
+            del.className = "btn";
+            del.textContent = "Xóa";
+            del.style.padding = "4px 8px";
+            del.style.borderRadius = "10px";
+            del.style.fontSize = "12px";
+            del.setAttribute("data-delcat", "1");
+            del.setAttribute("data-folder", c.folder);
+            del.setAttribute("data-name", c.name);
+            wrap.appendChild(del);
+
+
+            if (!!c.readonly || String(c.slug || "").toLowerCase() === "ebook") {
+              del.disabled = true;
+              del.title = "Chủ đề đang readonly nên không thể xóa";
+              del.style.opacity = "0.6";
+            }
+            catList.appendChild(wrap);
+          });
+        }
+
+        async function refresh() {
+          DATA = await apiGetData();
+          renderCats();
+        }
+
+        async function onAddCat() {
+          catMsg.textContent = "";
+          try {
+            const name = catName.value.trim();
+            const folderPath = catFolder.value.trim();
+            if (!name) throw new Error("Nhập tên chủ đề");
+            if (!folderPath) throw new Error("Nhập đường dẫn thư mục");
+            await apiCreateCategory(name, folderPath);
+            catName.value = ""; catFolder.value = "";
+            catMsg.innerHTML = '<span class="ok">✅ Đã tạo chủ đề + folder.</span>';
+            await refresh();
+          } catch (e) {
+            catMsg.innerHTML = '<span class="err">❌ ' + esc(e.message || e) + '</span>';
+          }
+        }
+
+        function toggleTypeUI() {
+          const type = pType.value;
+          if (type === "html") {
+            htmlBox.hidden = false;
+            fileBox.hidden = true;
+          } else {
+            htmlBox.hidden = true;
+            fileBox.hidden = false;
+            pFile.accept = (type === "docx") ? ".docx" : (type === "pdf" ? ".pdf,application/pdf" : "video/mp4");
+          }
+          postMsg.textContent = "";
+        }
+
+        pType.addEventListener("change", toggleTypeUI);
+        pFile.addEventListener("change", () => {
+          const f = pFile.files && pFile.files[0];
+          pickedInfo.textContent = f ? `Đã chọn: ${f.name} (${Math.round(f.size / 1024)} KB)` : "";
+        });
+
+        async function onAddPost() {
+          postMsg.textContent = "";
+          try {
+            const title = pTitle.value.trim();
+            const categoryFolder = pCategory.value;
+            const type = pType.value;
+            const tags = pTags.value.trim();
+            const html = pHtml.value.trim();
+            const path = pPath.value.trim();
+            const file = pFile.files && pFile.files[0];
+
+            if (!title) throw new Error("Nhập tiêu đề");
+            if (!categoryFolder) throw new Error("Chọn chủ đề");
+
+            const fd = new FormData();
+            fd.append("title", title);
+            fd.append("categoryFolder", categoryFolder);
+            fd.append("type", type);
+            fd.append("tags", tags);
+            fd.append("html", html);
+            fd.append("path", path);
+            if (file) fd.append("file", file);
+
+            const res = await apiCreatePost(fd);
+            postMsg.innerHTML = '<span class="ok">✅ Đã tạo post.</span> Mã: <code>' + esc(res.postId) + '</code>';
+            pTitle.value = ""; pTags.value = ""; pHtml.value = ""; pPath.value = ""; pFile.value = ""; pickedInfo.textContent = "";
+            await refresh();
+          } catch (e) {
+            postMsg.innerHTML = '<span class="err">❌ ' + esc(e.message || e) + '</span>';
+          }
+        }
+
+        document.getElementById("addCat").addEventListener("click", onAddCat);
+        document.getElementById("addPost").addEventListener("click", onAddPost);
+
+        refresh().then(() => toggleTypeUI()).catch(e => {
+          console.error(e);
+          postMsg.innerHTML = '<span class="err">❌ Không tải được dữ liệu: ' + esc(e.message || e) + '</span>';
+        });
+      })();
+    });
+  </script>
+
+  <script>
+    // Add delete category feature (requires apiDeleteCategory)
+    (function () {
+      // find existing render function by watching DOM changes; simplest: add event delegation for buttons with data-delcat
+      document.addEventListener("click", async (e) => {
+        const btn = e.target.closest("[data-delcat]");
+        if (!btn) return;
+        const folder = btn.getAttribute("data-folder") || "";
+        const name = btn.getAttribute("data-name") || folder;
+        const cascade = confirm(`Xóa chủ đề "${name}"?\n\nOK = xóa kèm bài viết trong chủ đề (cascade)\nCancel = hủy.`);
+        if (!cascade) return;
+        const delFolder = confirm("Bạn có muốn xóa luôn THƯ MỤC + tất cả file trong thư mục chủ đề không?\n\nOK = xóa folder\nCancel = giữ folder");
+        try {
+          await apiDeleteCategory(folder, { cascade: true, deleteFolder: delFolder });
+          location.reload();
+        } catch (err) {
+          alert(err.message || String(err));
+        }
+      });
+    })();
+  </script>
+
+  <script>
+    (function () {
+
+
+      function renderPosts() {
+        if (!postList) return;
+        if (!posts.length) {
+          postList.innerHTML = '<div class="notice">Chưa có post.</div>';
+          return;
+        }
+        postList.innerHTML = "";
+        posts.forEach(p => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.style.padding = "14px";
+          card.style.display = "grid";
+          card.style.gap = "8px";
+
+          const top = document.createElement("div");
+          top.style.display = "flex";
+          top.style.justifyContent = "space-between";
+          top.style.gap = "10px";
+          top.style.alignItems = "center";
+
+          const title = document.createElement("div");
+          title.style.fontWeight = "700";
+          title.textContent = p.title || "(no title)";
+
+          const actions = document.createElement("div");
+          actions.style.display = "flex";
+          actions.style.gap = "8px";
+          actions.style.flexWrap = "wrap";
+
+          const ro = document.createElement("label");
+          ro.style.display = "inline-flex";
+          ro.style.alignItems = "center";
+          ro.style.gap = "6px";
+          ro.style.fontSize = "12px";
+          ro.style.opacity = ".9";
+          const chk = document.createElement("input");
+          chk.type = "checkbox";
+          chk.checked = !!p.readonly;
+          chk.addEventListener("change", async () => {
+            try {
+              await apiSetPostReadonly(p.id, chk.checked);
+              p.readonly = chk.checked;
+              btnEdit.disabled = !!p.readonly;
+              btnDel.disabled = !!p.readonly;
+            } catch (err) {
+              alert(err.message || String(err));
+              chk.checked = !!p.readonly;
+            }
+          });
+          ro.appendChild(chk);
+          ro.appendChild(document.createTextNode("readonly"));
+
+          const btnEdit = document.createElement("button");
+          btnEdit.className = "btn";
+          btnEdit.type = "button";
+          btnEdit.textContent = "Sửa";
+          btnEdit.disabled = !!p.readonly;
+          btnEdit.addEventListener("click", async () => {
+            openEditModal(p);
+          });
+          // This line was removed as it was a partial, out-of-place snippet.
+          // p.title = newTitle;
+          // p.tags = newTags.split(",").map(x=>x.trim()).filter(Boolean);
+          // renderPosts();
+          // }catch(err){alert(err.message || String(err)); }
+          // });
+
+          const btnDel = document.createElement("button");
+          btnDel.className = "btn";
+          btnDel.type = "button";
+          btnDel.textContent = "Xóa";
+          btnDel.disabled = !!p.readonly;
+          btnDel.addEventListener("click", async () => {
+            if (!confirm(`Xóa post "${p.title}"?`)) return;
+            const delFile = confirm("Xóa luôn file (docx/video) kèm theo nếu có?");
+            try {
+              await apiDeletePost(p.id, { deleteFile: delFile });
+              const i = posts.findIndex(x => x.id === p.id);
+              if (i >= 0) posts.splice(i, 1);
+              renderPosts();
+            } catch (err) { alert(err.message || String(err)); }
+          });
+
+          actions.appendChild(ro);
+          actions.appendChild(btnEdit);
+          actions.appendChild(btnDel);
+
+          top.appendChild(title);
+          top.appendChild(actions);
+
+          const meta = document.createElement("div");
+          meta.style.fontSize = "12px";
+          meta.style.opacity = ".85";
+          meta.innerHTML = `<span class="badge">${esc(p.type || "")}</span> <span class="badge">${esc(p.category || "")}</span> <span class="badge">id: ${esc(p.id)}</span>`;
+
+          const tags = document.createElement("div");
+          tags.style.display = "flex";
+          tags.style.gap = "6px";
+          tags.style.flexWrap = "wrap";
+          (p.tags || []).slice(0, 12).forEach(t => {
+            const b = document.createElement("span");
+            b.className = "badge";
+            b.textContent = t;
+            tags.appendChild(b);
+          });
+
+          card.appendChild(top);
+          card.appendChild(meta);
+          if (tags.childNodes.length) card.appendChild(tags);
+          postList.appendChild(card);
+        });
+      }
+      renderPosts();
+    })().catch(e => console.error(e));
+  </script>
+
+  <section class="panel card" id="postManager" style="margin-top:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <h3 style="margin:0">Quản lý Post (xóa / readonly)</h3>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <label style="font-size:13px;opacity:.9">Lọc theo chủ đề</label>
+        <select id="postCatFilter" class="input" style="min-width:220px"></select>
+        <select id="postSort" class="input" style="min-width:120px" title="Sắp xếp">
+          <option value="newest">Mới nhất</option>
+          <option value="oldest">Cũ nhất</option>
+        </select>
+        <input id="postSearch" class="input" placeholder="Tìm theo tiêu đề / tag..." style="min-width:260px" />
+      </div>
+    </div>
+    <div id="postListByCat" style="display:grid;gap:10px;margin-top:12px"></div>
+  </section>
+
+
+  <!-- AUTO:POST_MGMT_START -->
+  <script>
+    (async function () {
+      function esc(s) { return String(s || "").replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+      const catList = document.getElementById("catList");
+      const postCatFilter = document.getElementById("postCatFilter");
+      const postSearch = document.getElementById("postSearch");
+      const postSort = document.getElementById("postSort");
+      const postListByCat = document.getElementById("postListByCat");
+
+      const data = await apiGetData();
+      const cats = (data.categories || []).slice(); // keep order
+      const posts = (data.posts || []).slice();
+
+      // ===== Categories: show readonly + delete (disabled if readonly) =====
+      if (catList) {
+        catList.innerHTML = "";
+        cats.forEach(c => {
+          const wrap = document.createElement("span");
+          wrap.className = "badge";
+          wrap.style.display = "inline-flex";
+          wrap.style.alignItems = "center";
+          wrap.style.gap = "8px";
+
+          const label = document.createElement("span");
+          label.textContent = `${c.name} (${c.folder})`;
+          wrap.appendChild(label);
+
+          const ro = document.createElement("label");
+          ro.style.display = "inline-flex";
+          ro.style.alignItems = "center";
+          ro.style.gap = "6px";
+          ro.style.fontSize = "12px";
+          ro.style.opacity = ".92";
+          const chk = document.createElement("input");
+          chk.type = "checkbox";
+          chk.checked = !!c.readonly;
+          ro.appendChild(chk);
+          ro.appendChild(document.createTextNode("readonly"));
+          wrap.appendChild(ro);
+
+          const del = document.createElement("button");
+          del.type = "button";
+          del.className = "btn";
+          del.textContent = "Xóa";
+          del.style.padding = "4px 8px";
+          del.style.borderRadius = "10px";
+          del.style.fontSize = "12px";
+          del.disabled = !!c.readonly;
+
+          chk.addEventListener("change", async () => {
+            try {
+              await apiSetCategoryReadonly(c.folder, chk.checked);
+              c.readonly = chk.checked;
+              del.disabled = !!c.readonly;
+            } catch (err) {
+              alert(err.message || String(err));
+              chk.checked = !!c.readonly;
+            }
+          });
+
+          del.addEventListener("click", async () => {
+            const cascade = confirm(`Xóa chủ đề "${c.name}"?\n\nOK = xóa kèm bài viết (cascade)\nCancel = hủy.`);
+            if (!cascade) return;
+            const delFolder = confirm("Bạn có muốn xóa luôn thư mục + tất cả file trong thư mục chủ đề không?");
+            try {
+              await apiDeleteCategory(c.folder, { cascade: true, deleteFolder: delFolder });
+              location.reload();
+            } catch (err) { alert(err.message || String(err)); }
+          });
+
+          wrap.appendChild(del);
+          catList.appendChild(wrap);
+        });
+      }
+
+      // ===== Post management: filter by category + delete screen + readonly =====
+      function buildCatFilter() {
+        if (!postCatFilter) return;
+        const allOpt = document.createElement("option");
+        allOpt.value = "__all__";
+        allOpt.textContent = "Tất cả chủ đề";
+        postCatFilter.appendChild(allOpt);
+
+        cats.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c.slug || c.folder || c.name;
+          opt.textContent = c.name;
+          postCatFilter.appendChild(opt);
+        });
+
+        if (cats.length) {
+          postCatFilter.value = (cats[0].slug || cats[0].folder || cats[0].name);
+        }
+      }
+
+      function matchSearch(p, q) {
+        if (!q) return true;
+        q = q.toLowerCase();
+        const t = (p.title || "").toLowerCase();
+        const tags = (p.tags || []).join(" ").toLowerCase();
+        return t.includes(q) || tags.includes(q);
+      }
+
+      function getCatByPost(p) {
+        // try by categorySlug
+        const slug = p.categorySlug || "";
+        let c = cats.find(x => (x.slug || "").toLowerCase() === slug.toLowerCase());
+        if (c) return c;
+        // fallback by name
+        const name = (p.category || "").toLowerCase();
+        c = cats.find(x => (x.name || "").toLowerCase() === name);
+        return c || null;
+      }
+
+      function matchSearch(p, q) {
+        if (!q) return true;
+        const hay = ((p.title || "") + " " + (p.tags || []).join(" ")).toLowerCase();
+        return hay.includes(q.toLowerCase());
+      }
+
+      function renderPosts() {
+        if (!postListByCat) return;
+        let selected = postCatFilter ? postCatFilter.value : "__all__";
+        if (postCatFilter && (selected === "__all__" || !selected) && cats.length) { selected = (cats[0].slug || cats[0].folder || cats[0].name); }
+        const q = postSearch ? (postSearch.value || "").trim() : "";
+
+        // group posts by category
+        const groups = new Map(); // key -> {cat, posts}
+        posts.forEach(p => {
+          const cat = getCatByPost(p);
+          const key = cat ? (cat.slug || cat.folder || cat.name) : "__none__";
+          if (selected !== "__all__" && key !== selected) return;
+          if (!matchSearch(p, q)) return;
+
+          if (!groups.has(key)) groups.set(key, { cat, posts: [] });
+          groups.get(key).posts.push(p);
+        });
+
+        // sort posts
+        const order = postSort ? postSort.value : "newest";
+        for (const g of groups.values()) {
+          g.posts.sort((a, b) => {
+            const getT = (x) => {
+              if (x.createdAt) return Date.parse(x.createdAt);
+              return Number((x.id || "").split('-').pop()) || 0;
+            };
+            const ta = getT(a);
+            const tb = getT(b);
+            return order === "oldest" ? ta - tb : tb - ta;
+          });
+        }
+
+        const keys = Array.from(groups.keys());
+        // keep category order
+        keys.sort((ka, kb) => {
+          if (ka === "__none__") return 1;
+          if (kb === "__none__") return -1;
+          const ia = cats.findIndex(c => (c.slug || c.folder || c.name) === ka);
+          const ib = cats.findIndex(c => (c.slug || c.folder || c.name) === kb);
+          return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
+        });
+
+        postListByCat.innerHTML = "";
+        if (keys.length === 0) {
+          postListByCat.innerHTML = '<div class="notice">Không có post theo bộ lọc.</div>';
+          return;
+        }
+
+        keys.forEach(key => {
+          const g = groups.get(key);
+          const title = g.cat ? g.cat.name : "(Chưa gán chủ đề)";
+
+          const block = document.createElement("div");
+          block.className = "card";
+          block.style.padding = "14px";
+
+          const head = document.createElement("div");
+          head.style.display = "flex";
+          head.style.justifyContent = "space-between";
+          head.style.alignItems = "center";
+          head.style.gap = "10px";
+          head.style.flexWrap = "wrap";
+
+          const h = document.createElement("div");
+          h.style.fontWeight = "800";
+          h.style.fontSize = "15px";
+          h.textContent = `${title} — ${g.posts.length} post`;
+
+          head.appendChild(h);
+          block.appendChild(head);
+
+          const list = document.createElement("div");
+          list.style.display = "grid";
+          list.style.gap = "10px";
+          list.style.marginTop = "12px";
+
+          g.posts.forEach(p => {
+            const row = document.createElement("div");
+            row.className = "card";
+            row.style.padding = "12px";
+            row.style.display = "grid";
+            row.style.gap = "8px";
+
+            const top = document.createElement("div");
+            top.style.display = "flex";
+            top.style.justifyContent = "space-between";
+            top.style.alignItems = "center";
+            top.style.gap = "10px";
+            top.style.flexWrap = "wrap";
+
+            const t = document.createElement("div");
+            t.style.fontWeight = "700";
+            t.textContent = p.title || "(no title)";
+
+            const actions = document.createElement("div");
+            actions.style.display = "flex";
+            actions.style.gap = "8px";
+            actions.style.flexWrap = "wrap";
+            actions.style.alignItems = "center";
+
+            // readonly checkbox
+            const ro = document.createElement("label");
+            ro.style.display = "inline-flex";
+            ro.style.alignItems = "center";
+            ro.style.gap = "6px";
+            ro.style.fontSize = "12px";
+            ro.style.opacity = ".92";
+            const chk = document.createElement("input");
+            chk.type = "checkbox";
+            chk.checked = !!p.readonly;
+            ro.appendChild(chk);
+            ro.appendChild(document.createTextNode("readonly"));
+
+            const btnEdit = document.createElement("button");
+            btnEdit.className = "btn";
+            btnEdit.type = "button";
+            btnEdit.textContent = "Sửa";
+            btnEdit.disabled = !!p.readonly;
+            btnEdit.addEventListener("click", () => {
+              if (p.readonly) return;
+              if (window.openEditModal) window.openEditModal(p);
+              else alert("Edit modal not ready");
+            });
+
+            const btnDel = document.createElement("button");
+            btnDel.className = "btn";
+            btnDel.type = "button";
+            btnDel.textContent = "Xóa";
+            btnDel.disabled = !!p.readonly;
+
+            chk.addEventListener("change", async () => {
+              try {
+                await apiSetPostReadonly(p.id, chk.checked);
+                p.readonly = chk.checked;
+                btnEdit.disabled = !!p.readonly;
+                btnDel.disabled = !!p.readonly;
+              } catch (err) {
+                alert(err.message || String(err));
+                chk.checked = !!p.readonly;
+              }
+            });
+
+            btnDel.addEventListener("click", async () => {
+              if (p.readonly) return;
+              if (!confirm(`Xóa post "${p.title}"?`)) return;
+              const delFile = confirm("Xóa luôn file (docx/video) kèm theo nếu có?");
+              try {
+                await apiDeletePost(p.id, { deleteFile: delFile });
+                const i = posts.findIndex(x => x.id === p.id);
+                if (i >= 0) posts.splice(i, 1);
+                renderPosts();
+              } catch (err) { alert(err.message || String(err)); }
+            });
+
+            actions.appendChild(ro);
+            actions.appendChild(btnEdit);
+            actions.appendChild(btnDel);
+
+            top.appendChild(t);
+            top.appendChild(actions);
+
+            const meta = document.createElement("div");
+            meta.style.fontSize = "12px";
+            meta.style.opacity = ".85";
+            meta.innerHTML = `<span class="badge">${esc(p.type || "")}</span> <span class="badge">id: ${esc(p.id)}</span>`;
+
+            const tags = document.createElement("div");
+            tags.style.display = "flex";
+            tags.style.gap = "6px";
+            tags.style.flexWrap = "wrap";
+            (p.tags || []).slice(0, 12).forEach(tag => {
+              const b = document.createElement("span");
+              b.className = "badge";
+              b.textContent = tag;
+              tags.appendChild(b);
+            });
+
+            row.appendChild(top);
+            row.appendChild(meta);
+            if (tags.childNodes.length) row.appendChild(tags);
+            list.appendChild(row);
+          });
+
+          block.appendChild(list);
+          postListByCat.appendChild(block);
+        });
+      }
+
+      buildCatFilter();
+      renderPosts();
+
+      if (postCatFilter) postCatFilter.addEventListener("change", renderPosts);
+      if (postSort) postSort.addEventListener("change", renderPosts);
+      if (postSearch) postSearch.addEventListener("input", () => { clearTimeout(window.__psT); window.__psT = setTimeout(renderPosts, 150); });
+
+    })().catch(e => {
+      console.error(e);
+      alert(e.message || String(e));
+    });
+  </script>
+  <!-- AUTO:POST_MGMT_END -->
+
+
+  <!-- Edit Post Modal -->
+  <div id="editModal" class="modal" hidden>
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title">Chỉnh sửa bài viết</div>
+        <button id="editClose" class="btn" type="button">Đóng</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Tiêu đề</label>
+          <input id="editTitle" class="input" type="text" />
+        </div>
+
+        <div class="form-row">
+          <label>Tags (cách nhau dấu phẩy)</label>
+          <input id="editTags" class="input" type="text" />
+        </div>
+
+        <div class="form-row">
+          <label>Loại bài</label>
+          <div id="editType" class="badge"></div>
+          <div class="hint">Gợi ý: bài <b>Article</b> có thể sửa nội dung HTML. DOCX/Video/PDF: chọn file mới để thay.
+          </div>
+        </div>
+
+        <div id="editHtmlWrap" class="form-row" hidden>
+          <label>Nội dung HTML</label>
+          <textarea id="editHtml" class="textarea" rows="14"></textarea>
+        </div>
+
+        <div id="editFileWrap" class="form-row" hidden>
+          <label>Thay file</label>
+          <input id="editFile" class="input" type="file" />
+          <div id="editCurrentPath" class="hint"></div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="editSave" class="btn primary" type="button">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+async function apiCategoryReadonly(folderPath, readonly){
+return apiPost("/api/category/readonly", { folderPath, readonly });
+}
+
+</html>
